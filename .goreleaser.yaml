@@ -1,0 +1,26 @@
+# Builds release archives for the GitHub release page. Homebrew installs from
+# source through the tap formula (packaging/homebrew/rustkill.rb) instead.
+version: 2
+builds:
+  - env: [CGO_ENABLED=0]
+    goos: [darwin, linux, windows]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags: ["-s -w -X main.version={{.Version}}"]
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files: [README.md, LICENSE, docs/contract.md]
+checksum:
+  name_template: checksums.txt
+release:
+  github:
+    owner: Matthew-Eucaristo
+    name: rustkill
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude: ["^docs:", "^test:", "^ci:", "^chore:"]
