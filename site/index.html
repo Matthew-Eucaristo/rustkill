@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>rustkill: reclaim the disk space Rust leaves behind, the official way</title>
+<meta name="description" content="Finds every target folder cargo built, plus Cargo's registry and git caches, shared build directories, sccache, cargo install tools and rustup's toolchains, offline docs and cross targets. Shows what each really frees and why it is safe, then removes only what you pick: folders to the Trash, the rest through rustup and cargo.">
+<meta name="theme-color" content="#100e0d">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://matthew-eucaristo.github.io/rustkill/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="rustkill">
+<meta property="og:title" content="rustkill: reclaim what Rust leaves behind">
+<meta property="og:description" content="target folders, Cargo's registry and git caches, sccache, cargo install tools, rustup toolchains, docs and cross targets. Safely, and the official way.">
+<meta property="og:url" content="https://matthew-eucaristo.github.io/rustkill/">
+<meta property="og:image" content="https://matthew-eucaristo.github.io/rustkill/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="rustkill's list: an idle project's target folder and Cargo's crates.io sources marked safe, a target git does not ignore marked protected, and an older toolchain marked review with its rustup command, each with its size bar">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "rustkill",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "macOS, Linux, Windows",
+  "description": "Reclaim the disk space Rust leaves behind: cargo target folders, Cargo's registry and git caches, shared build directories, sccache, cargo install tools and rustup toolchains, docs and cross targets. Safely, and the official way.",
+  "url": "https://matthew-eucaristo.github.io/rustkill/",
+  "downloadUrl": "https://github.com/Matthew-Eucaristo/rustkill/releases",
+  "codeRepository": "https://github.com/Matthew-Eucaristo/rustkill",
+  "license": "https://opensource.org/licenses/MIT",
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}
+}
+</script>
+<script src="sample.js" defer></script>
+<script src="app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="top">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top" aria-label="rustkill home"><span class="badge">rustkill</span></a>
+    <nav aria-label="Sections">
+      <a href="#finds">What it finds</a>
+      <a href="#safety">Safety</a>
+      <a href="#sizes">Sizes</a>
+      <a href="#use">Automation</a>
+      <a href="#install">Install</a>
+    </nav>
+    <a class="gh" href="https://github.com/Matthew-Eucaristo/rustkill">
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      <span>GitHub</span>
+    </a>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="hero">
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> macOS · Linux · Windows · open source · MIT · <!--version-->v0.1.0<!--/version--></p>
+    <h1>Reclaim what Rust leaves behind.<br><span class="grad">Safely, and the official way.</span></h1>
+    <p class="lede">Every crate you build grows a <code>target</code> folder. Cargo keeps every crate it ever downloaded, rustup keeps every toolchain with its offline docs, and every <code>cargo install</code> stays. <b>rustkill</b> finds all of it, shows what each one really frees and why it is safe or not, and removes only what you pick. Build folders and caches go to the Trash; toolchains, components and installed tools go through <code>rustup</code> and <code>cargo</code> themselves.</p>
+
+    <div class="install">
+      <div class="cmd" role="group" aria-label="Install command">
+        <span class="prompt" aria-hidden="true">$</span>
+        <code>brew install matthew-eucaristo/tap/rustkill</code>
+        <button class="copy" type="button" data-copy="brew install matthew-eucaristo/tap/rustkill" aria-label="Copy install command"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zM1.75 5h1.5v1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5h1.5v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5C0 5.784.784 5 1.75 5z"/></svg><span class="copied">Copied</span></button>
+      </div>
+      <p class="sub">Then run <code>rustkill</code>. Nervous? <code>rustkill --dry-run</code> changes nothing. <a href="#install">Other ways to install →</a></p>
+    </div>
+  </div>
+
+  <div class="wrap wide">
+    <div class="term-wrap">
+      <div class="window">
+        <div class="titlebar">
+          <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="title">rustkill --dry-run · demo workspace</span>
+          <span class="hint-pill" id="try-hint">Try it: <kbd>s</kbd> safe · <kbd>a</kbd> all safe · <kbd>⏎</kbd> clean · <kbd>tab</kbd> group</span>
+        </div>
+        <div class="term" id="term" tabindex="0" role="application" aria-roledescription="interactive demo"
+             aria-label="Interactive rustkill demo on a generated workspace. Arrow keys move, space selects, s selects the safe items in projects, a every safe item, Enter shows what a dry run would do, Tab groups by project, framework or idle time, o sorts, slash filters, question mark explains the colours, q quits.">
+          <noscript><img src="demo.gif" alt="rustkill scanning a generated workspace" width="1280" height="580"></noscript>
+        </div>
+        <div class="keys" id="term-keys" aria-label="Demo controls"></div>
+      </div>
+      <p class="caption" id="term-caption">The real output of <code>rustkill scan --json</code> on the workspace <code>demo/setup.sh</code> generates, made when this page was built. Fake crates, caches and toolchains, not your machine, and nothing here reads your disk. Like <code>--dry-run</code>, it changes nothing.</p>
+    </div>
+  </div>
+</section>
+
+<section class="strip" aria-label="At a glance">
+  <div class="wrap strip-in">
+    <div><b>14</b><span>kinds of item it knows</span></div>
+    <div><b>4</b><span>official commands it runs</span></div>
+    <div><b>4</b><span>safety levels, with reasons</span></div>
+    <div><b>0</b><span>Rust needed to run it</span></div>
+    <div><b>0</b><span>config, state or network calls</span></div>
+  </div>
+</section>
+
+<section class="sec" id="finds">
+  <div class="wrap">
+    <p class="kicker">What it finds</p>
+    <h2>Not just <code class="h2c">target</code>. The whole footprint.</h2>
+    <p class="intro">A build folder counts only when cargo itself marked it: cargo's <code>CACHEDIR.TAG</code> beside its build layout, wherever <code>build.target-dir</code> put it. A folder merely named <code>target</code> never counts. On the machine, toolchains, components and tools are removed only by <code>rustup</code> and <code>cargo</code>, which rustkill runs from your home folder. Every rule links its source in <a href="https://github.com/Matthew-Eucaristo/rustkill/blob/main/docs/rules.md">docs/rules.md</a>.</p>
+
+    <div class="finds">
+      <div class="finds-col">
+        <article class="cat" style="--c:#e0573a; --o:1">
+          <header><i></i><h3>In your projects</h3><span class="cat-sub">a crate with <code>Cargo.toml</code></span></header>
+          <ul>
+            <li><span>A project's <code class="inl">target</code>, wherever cargo built it</span><code>cargo's tag, plus .rustc_info.json or a profile folder with its locks and fingerprints</code><span class="lvs"><span class="lv safe">● safe</span></span></li>
+            <li><span>The project changed or was built in the last 7 days</span><code>comes back with cargo build, from scratch</code><span class="lvs"><span class="lv review">▲ review</span></span></li>
+            <li><span>Installers you built: <code class="inl">target/release/bundle</code></span><code>Tauri and cargo-bundle</code><span class="lvs"><span class="lv review">▲ review</span></span></li>
+            <li><span>A project in a linked git worktree</span><code>an agent may still use it; fell manages the worktree</code><span class="lvs"><span class="lv review">▲ review</span></span></li>
+            <li><span>git tracks files inside or does not ignore it, or a repository lies inside</span><code>shown, never removed</code><span class="lvs"><span class="lv protected">■ protected</span></span></li>
+            <li><span>cargo holds the build lock, or cargo, rustc, rust-analyzer or bacon works in the project</span><code>asked without waiting; the lock is never created</code><span class="lvs"><span class="lv live">◉ live</span></span></li>
+          </ul>
+        </article>
+
+        <article class="cat" style="--c:#e7c95a; --o:3">
+          <header><i></i><h3>Installed with cargo install</h3><span class="cat-sub">with when each last ran</span></header>
+          <ul>
+            <li><span>Each package from <code class="inl">cargo install</code> or <code class="inl">cargo binstall</code>, read from <code class="inl">.crates2.json</code></span><code>cargo uninstall --root $CARGO_HOME &lt;package&gt;</code><span class="lvs"><span class="lv review">▲ review</span></span></li>
+            <li><span>Any item whose <code class="inl">cargo</code> or <code class="inl">rustup</code> is not installed</span><code>listed with the command for you to run</code><span class="lvs"><span class="lv protected">■ protected</span></span></li>
+          </ul>
+        </article>
+      </div>
+      <div class="finds-col">
+        <article class="cat" style="--c:#4cc3c9; --o:2">
+          <header><i></i><h3>Cargo caches and shared builds</h3><span class="cat-sub">moved to the Trash: no stable command exists</span></header>
+          <ul>
+            <li><span><code class="inl">registry/src/&lt;registry&gt;</code> <code class="inl">git/checkouts</code></span><code>unpacked again from the local downloads, without the network</code><span class="lvs"><span class="lv safe">● safe</span></span></li>
+            <li><span><code class="inl">registry/cache</code> <code class="inl">registry/index</code> <code class="inl">git/db</code></span><code>downloaded or cloned again</code><span class="lvs"><span class="lv review">▲ review</span></span></li>
+            <li><span>Registry folders of Cargo before 1.85, such as <code class="inl">index.crates.io-6f17d22bba15001f</code></span><code>Cargo 1.85 renamed them; newer Cargo never reads the old ones</code><span class="lvs"><span class="lv safe">● safe</span><span class="lv review">▲ old cargo</span></span></li>
+            <li><span>Shared build directories: <code class="inl">CARGO_TARGET_DIR</code> <code class="inl">build.target-dir</code> <code class="inl">build.build-dir</code></span><code>every project that builds into it starts from scratch</code><span class="lvs"><span class="lv review">▲ review</span></span></li>
+            <li><span>sccache's local cache</span><code>sccache has no command to empty it</code><span class="lvs"><span class="lv review">▲ review</span></span></li>
+            <li><span>rustup's leftover <code class="inl">downloads</code> and <code class="inl">tmp</code></span><code>rustup downloads again what it needs</code><span class="lvs"><span class="lv safe">● safe</span></span></li>
+          </ul>
+        </article>
+
+        <article class="cat" style="--c:#b48cf2; --o:4">
+          <header><i></i><h3>Toolchains, components and targets</h3><span class="cat-sub">with the projects that pin them</span></header>
+          <ul>
+            <li><span>Each rustup toolchain</span><code>rustup toolchain uninstall &lt;toolchain&gt;</code><span class="lvs"><span class="lv review">▲ review</span></span></li>
+            <li><span><code class="inl">rust-docs</code>, the offline docs <code class="inl">rustup doc</code> opens, often 900 MB per toolchain</span><code>rustup component remove rust-docs --toolchain &lt;toolchain&gt;</code><span class="lvs"><span class="lv review">▲ review</span></span></li>
+            <li><span><code class="inl">rustc-dev</code></span><code>rustup component remove rustc-dev --toolchain &lt;toolchain&gt;</code><span class="lvs"><span class="lv review">▲ review</span></span></li>
+            <li><span>Standard libraries for cross-compiling: <code class="inl">wasm32-unknown-unknown</code> <code class="inl">thumbv7em-none-eabihf</code> …</span><code>rustup target remove &lt;target&gt; --toolchain &lt;toolchain&gt;</code><span class="lvs"><span class="lv review">▲ review</span></span></li>
+            <li><span>rustup's default and <code class="inl">RUSTUP_TOOLCHAIN</code></span><code>never removed</code><span class="lvs"><span class="lv protected">■ protected</span></span></li>
+          </ul>
+        </article>
+      </div>
+    </div>
+    <p class="note">The full catalog, with every condition and how each item comes back, is in the <a href="https://github.com/Matthew-Eucaristo/rustkill#what-it-finds">README</a>.</p>
+  </div>
+</section>
+
+<section class="sec alt" id="safety">
+  <div class="wrap">
+    <p class="kicker">Safety model</p>
+    <h2>It refuses anything it cannot verify.</h2>
+    <p class="intro">Every item gets one of four levels and the evidence behind it. The same four badges as the rest of the family, so a glance tells you what a key will touch.</p>
+    <div class="levels4">
+      <article class="lvcard safe">
+        <h3><span class="lv safe">● safe</span></h3>
+        <p>Rebuildable and cargo's own, git-ignored with nothing tracked inside, project idle 7+ days, nothing running in it.</p>
+        <p class="lvkey"><kbd>s</kbd> takes these in projects, <kbd>a</kbd> everywhere. Empty folders are skipped.</p>
+      </article>
+      <article class="lvcard review">
+        <h3><span class="lv review">▲ review</span></h3>
+        <ul>
+          <li>the project changed or was built this week</li>
+          <li>it holds installers or app bundles you built</li>
+          <li>a build directory several projects share</li>
+          <li>a linked worktree an agent may still use</li>
+          <li>git ignores the project folder itself</li>
+          <li>it costs a download, or is a tool or toolchain you installed on purpose</li>
+          <li>a Cargo older than 1.85 still reads it</li>
+        </ul>
+        <p class="lvkey">Allowed when you pick it. Never bulk-selected.</p>
+      </article>
+      <article class="lvcard protected">
+        <h3><span class="lv protected">■ protected</span></h3>
+        <ul>
+          <li>git tracks files inside, or does not ignore it</li>
+          <li>another repository lies inside</li>
+          <li>rustup's default toolchain, or every toolchain when rustup's settings cannot be read</li>
+          <li>its tool is missing</li>
+          <li>the folder is not well inside your home</li>
+        </ul>
+        <p class="lvkey">Shown, never removed.</p>
+      </article>
+      <article class="lvcard live">
+        <h3><span class="lv live">◉ live</span></h3>
+        <p>cargo, rustc, rust-analyzer, bacon or cargo-watch is working in the project, or cargo holds its build lock right now. Caches wait while any cargo or rustc runs, toolchains while rustup runs.</p>
+        <p class="lvkey">Nothing is allowed until it stops.</p>
+      </article>
+    </div>
+
+    <div class="guards">
+      <article><h3><span class="sg">⎔</span>Pinned to what you saw</h3><p>Right before acting, rustkill reads the item again and refuses it if anything safety-relevant changed since the scan, naming what blocks it. The folder must still carry cargo's tag and layout.</p></article>
+      <article><h3><span class="sg">⌘</span>The official way only</h3><p>Toolchains, components, targets and installed tools go only through <code>rustup</code> and <code>cargo uninstall</code>: absolute path, fixed arguments, never a shell, run from your home folder so no project's <code>rust-toolchain.toml</code> applies.</p></article>
+      <article><h3><span class="sg">∅</span>Never downloads</h3><p>Commands run with <code>RUSTUP_AUTO_INSTALL=0</code> and <code>CARGO_NET_OFFLINE=true</code>, so a cleanup never installs a toolchain. rustkill never contacts the network itself.</p></article>
+      <article><h3><span class="sg">⌁</span>Never runs your toolchains</h3><p>Versions come from rustup's own files, so the "last used" time stays honest. Symlinks are never followed or removed through.</p></article>
+      <article><h3><span class="sg">⌫</span>Trash by default</h3><p>Folders go to the Trash. <code>--permanent</code> deletes instead and turns the header red. Official commands delete by design, so the confirmation lists them apart.</p></article>
+      <article><h3><span class="sg">◌</span>Read-only modes</h3><p><code>--dry-run</code>, <code>--list</code>, <code>--json</code> and <code>scan</code> never remove anything. <code>--yes</code> takes safe project items only.</p></article>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="sizes">
+  <div class="wrap two top">
+    <div>
+      <p class="kicker">How sizes are counted</p>
+      <h2>Where the space goes, and what you really get back.</h2>
+      <p class="intro">Sizes are allocated blocks, like <code>du</code>, with hard-linked files counted once. On macOS rustkill asks APFS for each file's private size, and a <b class="cyan">FREES</b> column appears when much of an item is shared with something outside it. Projects are only part of it: each toolchain carries its own offline docs (<code>rust-docs</code>, about 900 MB for Rust 1.99) and cross targets.</p>
+      <ul class="checks">
+        <li><b>Measured, never assumed.</b> After acting, freed space comes from the disk's free space, before and after.</li>
+        <li><b>The Trash frees nothing until you empty it</b>, and the receipt says so. Official commands free space right away.</li>
+        <li><b>Each total is honest about its level.</b> The header counts what is on disk, what is allowed, and what is safe, separately.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="window">
+        <div class="titlebar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="title">the demo workspace, by where it lives</span></div>
+        <div class="shared where" id="where">
+          <div class="sh-row">
+            <div class="sh-head"><code>Projects</code><span class="wh-n">5 item(s)</span></div>
+            <div class="sh-bar" aria-hidden="true"><i class="sf" style="flex:976240640"></i><i class="rv" style="flex:424689664"></i><i class="pr" style="flex:73408512"></i><i class="gap" style="flex:109166592"></i></div>
+            <div class="sh-nums"><span><b>1.5 GB</b> on disk</span><span class="g">976.2 MB safe</span><span class="y">424.7 MB review</span><span class="r">73.4 MB protected</span></div>
+          </div>
+          <div class="sh-row">
+            <div class="sh-head"><code>Cargo caches and shared builds</code><span class="wh-n">8 item(s)</span></div>
+            <div class="sh-bar" aria-hidden="true"><i class="sf" style="flex:183500800"></i><i class="rv" style="flex:364904448"></i><i class="gap" style="flex:1034989568"></i></div>
+            <div class="sh-nums"><span><b>548.4 MB</b> on disk</span><span class="g">183.5 MB safe</span><span class="y">364.9 MB review</span></div>
+          </div>
+          <div class="sh-row">
+            <div class="sh-head"><code>Installed with cargo install</code><span class="wh-n">3 item(s)</span></div>
+            <div class="sh-bar" aria-hidden="true"><i class="rv" style="flex:28311552"></i><i class="gap" style="flex:1555083264"></i></div>
+            <div class="sh-nums"><span><b>28.3 MB</b> on disk</span><span class="y">28.3 MB review</span></div>
+          </div>
+          <div class="sh-row">
+            <div class="sh-head"><code>Toolchains, components and targets</code><span class="wh-n">5 item(s)</span></div>
+            <div class="sh-bar" aria-hidden="true"><i class="rv" style="flex:996167680"></i><i class="pr" style="flex:587227136"></i></div>
+            <div class="sh-nums"><span><b>1.6 GB</b> on disk</span><span class="y">996.2 MB review</span><span class="r">587.2 MB protected</span></div>
+          </div>
+          <p class="sh-note">Bar length is size on disk, its colours the safety levels. Only the safe part is ever bulk-selected; review items wait for you to pick them.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="window receipt">
+      <div class="titlebar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="title">the receipt (example from the README)</span></div>
+<pre class="term static" aria-label="Example receipt"><span class="b">rustkill receipt</span>
+  <span class="g">✓ Moved to Trash</span>       1.1 GB  3 item(s); restore from the Trash
+  <span class="g">✓ Freed by tools</span>     461.6 MB  2 official command(s)
+  Free space changed by <b>+461.6 MB</b> (measured); another ~1.1 GB when you empty the Trash</pre>
+    </div>
+  </div>
+</section>
+
+<section class="sec alt" id="use">
+  <div class="wrap two top">
+    <div>
+      <p class="kicker">Use and automate</p>
+      <h2>A TUI when you look. A contract when you script.</h2>
+      <p class="intro">In the TUI, <kbd>enter</kbd> shows exactly what will happen and asks first. <kbd>tab</kbd> groups by project, framework or idle time, <kbd>o</kbd> sorts, <kbd>/</kbd> filters and <kbd>?</kbd> explains every colour and key. It fits 60 columns, and <code>NO_COLOR</code> turns colour off.</p>
+<pre class="usage"><code><span class="c"># interactive; scans ~/dev (else the current folder)</span>
+rustkill
+<span class="c"># other roots</span>
+rustkill ~/code ~/side
+<span class="c"># interactive, but nothing changes</span>
+rustkill --dry-run
+<span class="c"># plain table, read-only</span>
+rustkill --list
+<span class="c"># headless: trash safe targets of projects idle 30+ days</span>
+rustkill --older-than 30d --yes
+<span class="c"># machine-readable, read-only (--ndjson streams)</span>
+rustkill scan --json
+<span class="c"># act on ids + fingerprints; each item is re-checked</span>
+rustkill apply --plan plan.json</code></pre>
+      <table class="codes">
+        <caption>Exit codes</caption>
+        <tr><td>0</td><td>ok, or a dry run</td></tr>
+        <tr><td>1</td><td>error before acting</td></tr>
+        <tr><td>2</td><td>usage error, or an invalid plan</td></tr>
+        <tr><td>3</td><td>something was refused, nothing failed</td></tr>
+        <tr><td>4</td><td>something failed</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="window">
+        <div class="titlebar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="title">rustkill scan --json · one item</span></div>
+<pre class="json" id="json-item"><code>{
+  "id": "cmp-dbaa1d20feee",
+  "fingerprint": "fp-…",
+  "kind": "rust-docs",
+  "category": "runtime",
+  "name": "rust-docs (stable)",
+  "path": "~/.rustup/toolchains/stable-aarch64-apple-darwin/share/doc/rust/html",
+  "tool": "rustup",
+  "action": "command",
+  "command": ["rustup", "component", "remove", "rust-docs", "--toolchain", "stable-aarch64-apple-darwin"],
+  "regenerate": "rustup component add rust-docs --toolchain stable",
+  "safety": { "level": "review", "reasons": [{ "code": "catalog_review", … }] }
+}</code></pre>
+      </div>
+      <p class="caption left">Every item carries its id, a fingerprint of its safety-relevant state, sizes, evidence and the exact command. Paths are home-relative. The format is described in <a href="https://github.com/Matthew-Eucaristo/rustkill/blob/main/docs/contract.md">docs/contract.md</a> and shared with the rest of the family.</p>
+      <div class="family">
+        <p><b>Works alone, or under <a href="https://matthew-eucaristo.github.io/decruft/">decruft</a>.</b> decruft, the family's umbrella, reads <code>rustkill scan --json</code> for its Rust &amp; Cargo row and hands removals back through <code>apply --plan</code>, so rustkill re-checks every item with its own rules. <a href="https://github.com/Matthew-Eucaristo/fell">fell</a>, <a href="https://github.com/Matthew-Eucaristo/nodekill">nodekill</a> and <a href="https://github.com/Matthew-Eucaristo/flutterkill">flutterkill</a> speak the same contract.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="install" class="sec">
+  <div class="wrap">
+    <p class="kicker">Install</p>
+    <h2>One binary. No Rust of its own.</h2>
+    <div class="tabs" role="tablist" aria-label="Install method">
+      <button role="tab" aria-selected="true" aria-controls="p-brew" id="t-brew">Homebrew</button>
+      <button role="tab" aria-selected="false" aria-controls="p-go" id="t-go" tabindex="-1">Go</button>
+      <button role="tab" aria-selected="false" aria-controls="p-rel" id="t-rel" tabindex="-1">Release archive</button>
+    </div>
+    <div class="panel" role="tabpanel" id="p-brew" aria-labelledby="t-brew">
+      <div class="cmd"><span class="prompt" aria-hidden="true">$</span><code>brew install matthew-eucaristo/tap/rustkill</code><button class="copy" type="button" data-copy="brew install matthew-eucaristo/tap/rustkill" aria-label="Copy Homebrew command"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zM1.75 5h1.5v1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5h1.5v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5C0 5.784.784 5 1.75 5z"/></svg><span class="copied">Copied</span></button></div>
+      <p>Recommended on macOS and Linux. Also installed for you by <code>brew install matthew-eucaristo/tap/decruft</code>.</p>
+    </div>
+    <div class="panel" role="tabpanel" id="p-go" aria-labelledby="t-go" hidden>
+      <div class="cmd"><span class="prompt" aria-hidden="true">$</span><code>go install github.com/Matthew-Eucaristo/rustkill@latest</code><button class="copy" type="button" data-copy="go install github.com/Matthew-Eucaristo/rustkill@latest" aria-label="Copy go install command"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zM1.75 5h1.5v1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5h1.5v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5C0 5.784.784 5 1.75 5z"/></svg><span class="copied">Copied</span></button></div>
+      <p>Needs Go 1.26 or later.</p>
+    </div>
+    <div class="panel" role="tabpanel" id="p-rel" aria-labelledby="t-rel" hidden>
+      <p><a class="btn" href="https://github.com/Matthew-Eucaristo/rustkill/releases/latest">Download from GitHub Releases →</a></p>
+      <p>Archives for macOS, Linux and Windows on amd64 and arm64, with <code>checksums.txt</code>.</p>
+    </div>
+
+    <div class="platforms">
+      <div><b>macOS</b><span>first-class: sizes account for APFS clones, the Trash supports Put Back, running processes are checked with <code>lsof</code>, build locks with <code>flock</code>.</span></div>
+      <div><b>Linux</b><span>freedesktop Trash, <code>/proc</code> process checks, <code>flock</code> build-lock checks, hard-link-aware sizes.</span></div>
+      <div><b>Windows</b><span>best effort: the Recycle Bin, no running-process or build-lock check, so nothing is bulk-selected.</span></div>
+    </div>
+
+    <details class="uninstall">
+      <summary>Uninstalling leaves nothing behind</summary>
+<pre><code>brew uninstall rustkill
+brew autoremove                     # removes Go if it was installed only to build rustkill
+brew cleanup --prune=all            # optional: clears Homebrew's download and build cache
+brew untap matthew-eucaristo/tap    # only if nothing else is installed from this tap</code></pre>
+      <p>rustkill writes no configuration, cache, log or state anywhere. On Linux, the first move to the Trash creates the standard <code>~/.local/share/Trash</code> folders if they are missing. With <code>go install</code>: <code>rm "$(go env GOPATH)/bin/rustkill"</code>. Anything it moved to the Trash stays there until you empty it or put it back.</p>
+    </details>
+  </div>
+</section>
+
+<section id="faq" class="sec alt">
+  <div class="wrap narrow">
+    <p class="kicker">Questions</p>
+    <h2>Fair questions.</h2>
+    <details><summary>Why not just <code>cargo clean</code>, or cargo-sweep?</summary><p>For one project, run inside it, <code>cargo clean</code> works. rustkill covers every project under your folders at once, plus everything outside them: Cargo's registry and git caches, sccache, <code>cargo install</code> tools and rustup's toolchains, docs and targets. It counts a folder only when cargo itself tagged it, checks git first, refuses what it cannot verify and shows what each item really frees. cargo-sweep and cargo-cache showed what a Rust machine accumulates; kondo and npkill inspired how you pick build folders.</p></details>
+    <details><summary>Will it break a project?</summary><p>A safe <code>target</code> is cargo's own build output, git-ignored with nothing tracked inside, in a project idle for a week or more, with nothing running in it and no build lock held. It comes back with <code>cargo build</code>, from scratch, so the first build is slow. Anything recently built, holding installers you built, shared by several projects or in a linked worktree is marked review and never bulk-selected.</p></details>
+    <details><summary>Is it safe to remove Cargo's registry?</summary><p>The Cargo book says any part of its cache can be removed: Cargo restores what a build needs. Sources unpack again from the local downloads without the network, so they are safe; the downloads, the index and git clones cost a download, so they are review. There is no stable command for this (<code>cargo clean gc</code> is nightly-only), so rustkill moves them to the Trash, and only while no cargo or rustc runs.</p></details>
+    <details><summary>What are those old <code>index.crates.io-6f17d22bba15001f</code> folders?</summary><p>Cargo 1.85 renamed its registry folders, so newer Cargo never reads the old ones. They are safe when every installed toolchain is 1.85 or newer. While an older toolchain is installed (one a project's <code>rust-toolchain.toml</code> pins, say), they are review, tagged "old cargo uses it".</p></details>
+    <details><summary>Will it remove the toolchain I am using?</summary><p>No. rustup's default and <code>RUSTUP_TOOLCHAIN</code> are protected, and if rustup's <code>settings.toml</code> cannot be read, every toolchain is. Other toolchains are review items, with a note naming the projects that pin them.</p></details>
+    <details><summary>Does it need Rust, or send anything anywhere?</summary><p>No. It is a single Go binary that never runs your toolchains and never contacts the network itself. The <code>rustup</code> and <code>cargo</code> commands it runs have auto-install and network access turned off. This page loads nothing from third parties either.</p></details>
+    <details><summary>Can I run it from a script or CI?</summary><p>Yes. <code>rustkill --older-than 30d --yes</code> moves the safe <code>target</code> folders of projects idle 30 days or more to the Trash and never touches caches, installed tools or toolchains. For anything else, <code>scan --json</code> and <code>apply --plan</code> pass ids and fingerprints, and exit codes say what happened.</p></details>
+    <details><summary>I found a bug that touches the wrong thing.</summary><p>That is a security issue. Please report it privately through <a href="https://github.com/Matthew-Eucaristo/rustkill/security/advisories/new">GitHub Security Advisories</a>, not a public issue.</p></details>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="wrap">
+    <h2>Find out what your Rust builds are really costing you.</h2>
+    <div class="cmd big"><span class="prompt" aria-hidden="true">$</span><code>brew install matthew-eucaristo/tap/rustkill</code><button class="copy" type="button" data-copy="brew install matthew-eucaristo/tap/rustkill" aria-label="Copy install command"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zM1.75 5h1.5v1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5h1.5v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5C0 5.784.784 5 1.75 5z"/></svg><span class="copied">Copied</span></button></div>
+    <p class="sub">Start with <code>rustkill --dry-run</code>. It only looks.</p>
+    <figure class="recording">
+      <div class="window">
+        <div class="titlebar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="title">The real TUI, recorded with VHS on the demo workspace</span></div>
+        <div class="media">
+          <video id="demo-video" muted loop playsinline preload="none" width="1280" height="580" poster="demo-poster.webp" aria-label="rustkill scanning Rust projects, Cargo caches, cargo install tools and rustup toolchains: it selects the idle safe target folders, groups them by framework and idle time, and shows exactly what a dry run would move to the Trash and which rustup and cargo commands it would run">
+            <source src="demo.mp4" type="video/mp4">
+          </video>
+          <button class="play" type="button" id="play" aria-label="Play the recording"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7z"/></svg></button>
+        </div>
+      </div>
+    </figure>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div>
+      <span class="badge">rustkill</span>
+      <p>MIT licensed. Prior art studied: cargo-sweep, cargo-cache, kondo and npkill. No code is shared with them.</p>
+      <p>Also by the same author: <a href="https://matthew-eucaristo.github.io/decruft/">decruft</a>, the Storage screen developers never got, and <a href="https://matthew-eucaristo.github.io/lately/">lately</a>, what just happened on my Mac, and what mattered.</p>
+    </div>
+    <nav aria-label="Project links">
+      <a href="https://github.com/Matthew-Eucaristo/rustkill">Source</a>
+      <a href="https://github.com/Matthew-Eucaristo/rustkill/releases">Releases</a>
+      <a href="https://github.com/Matthew-Eucaristo/rustkill/blob/main/docs/rules.md">Rules</a>
+      <a href="https://github.com/Matthew-Eucaristo/rustkill/blob/main/docs/contract.md">JSON contract</a>
+      <a href="https://github.com/Matthew-Eucaristo/rustkill/blob/main/SECURITY.md">Security</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>
