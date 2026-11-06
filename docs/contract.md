@@ -1,6 +1,6 @@
 # rustkill machine contract (schema_version 1)
 
-rustkill uses the same envelope as the other tools of the family (`fell`, `rustkill`, `flutterkill`), so an umbrella such as `decruft` can show what rustkill sees and hand removals back to it without bypassing its checks.
+rustkill uses the same envelope as the other tools of the family (`fell`, `nodekill`, `flutterkill`), so an umbrella such as `decruft` can show what rustkill sees and hand removals back to it without bypassing its checks.
 
 ## Principles
 

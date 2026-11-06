@@ -1,5 +1,5 @@
 // Package procs lists the user's running processes and their working
-// directories, so nodekill can tell whether a project is in use. It only reads.
+// directories, so rustkill can tell whether a project is in use. It only reads.
 package procs
 
 import (
