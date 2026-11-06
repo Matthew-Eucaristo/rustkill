@@ -235,8 +235,11 @@ func TestSharedTargetFromEnv(t *testing.T) {
 }
 
 func TestDeepInHome(t *testing.T) {
-	home := "/Users/someone"
-	for p, ok := range map[string]bool{"/Users/someone/.cargo/registry": true, "/Users/someone/.cargo": false, home: false, "/tmp/x/y": false, "rel/a": false} {
+	home := filepath.Join(t.TempDir(), "someone")
+	for p, ok := range map[string]bool{
+		filepath.Join(home, ".cargo", "registry"): true, filepath.Join(home, ".cargo"): false, home: false,
+		filepath.Join(filepath.Dir(home), "x", "y"): false, filepath.Join("rel", "a"): false,
+	} {
 		if DeepInHome(p, home) != ok {
 			t.Errorf("DeepInHome(%q) != %v", p, ok)
 		}
